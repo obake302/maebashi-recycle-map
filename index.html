@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>前橋市リサイクル庫・クリック式ガイドマップ</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+ integrity="sha256-p4NxAoJBhIINfQ3c6l0wK4f1u6Jw6Z7m4h4m5Q0mV9A=" crossorigin=""/>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700;900&display=swap');
+:root{
+  --mae-green:#126b45;--mae-green2:#1e8058;--mae-pale:#eef6f0;
+  --mae-cream:#f8f5ed;--mae-orange:#d47c32;--mae-red:#ad4d42;
+  --ink:#24322b;--muted:#647069;--line:#d6ded8;--white:#fff;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mae-cream);color:var(--ink);font-family:"Noto Sans JP",sans-serif}
+header{background:#fff;border-top:9px solid var(--mae-green);border-bottom:1px solid var(--line)}
+.header-inner{max-width:1240px;margin:auto;padding:22px 18px 20px;display:flex;align-items:center;gap:18px}
+.city-mark{width:66px;height:66px;border:2px solid var(--mae-green);border-radius:50%;display:grid;place-items:center;color:var(--mae-green);font-weight:900;font-size:12px;line-height:1.2;text-align:center;flex:none}
+.kicker{font-size:11px;letter-spacing:.15em;color:var(--mae-green);font-weight:900}
+h1{font-family:"Shippori Mincho",serif;font-size:clamp(25px,4vw,40px);margin:3px 0 5px;letter-spacing:.05em}
+.subtitle{font-size:13px;color:var(--muted)}
+.notice{max-width:1240px;margin:14px auto 0;padding:13px 16px;background:#fff8e7;border-left:5px solid var(--mae-orange);border-top:1px solid #ead9b3;border-right:1px solid #ead9b3;border-bottom:1px solid #ead9b3}
+.layout{max-width:1240px;margin:16px auto;padding:0 12px;display:grid;grid-template-columns:minmax(0,1.8fr) minmax(330px,.85fr);gap:16px}
+.card{background:var(--white);border:1px solid var(--line);box-shadow:0 3px 12px rgba(32,55,43,.07)}
+.map-wrap{position:relative;overflow:hidden}
+#map{height:730px}
+.map-label{position:absolute;z-index:500;left:16px;top:16px;background:#fff;padding:10px 14px;border-left:4px solid var(--mae-green);box-shadow:0 2px 8px rgba(0,0,0,.14);font-family:"Shippori Mincho",serif;font-weight:700}
+.side{display:flex;flex-direction:column;min-height:730px}
+.side-head{padding:16px;background:var(--mae-pale);border-bottom:1px solid var(--line)}
+.section-label{font-size:11px;color:var(--mae-green);font-weight:900;letter-spacing:.12em}
+.side-head strong{display:block;font-family:"Shippori Mincho",serif;font-size:20px;margin-top:3px}
+.controls{display:flex;gap:7px;margin-top:11px}
+input{width:100%;padding:10px;border:1px solid #c9d4cc;background:#fff;font-size:14px}
+button{background:var(--mae-green);color:#fff;border:0;padding:10px 12px;font-weight:700;cursor:pointer;white-space:nowrap}
+button:hover{background:var(--mae-green2)}
+#list{overflow:auto;flex:1;padding:5px}
+.item{display:flex;gap:10px;padding:11px 10px;border-bottom:1px solid #e8eee9;cursor:pointer}
+.item:hover{background:#f4f8f5}
+.num{width:30px;height:30px;flex:0 0 30px;border-radius:50%;background:var(--mae-green);color:#fff;display:grid;place-items:center;font-weight:900;font-size:12px}
+.item b{font-size:14px}.addr{font-size:12px;color:var(--muted);margin-top:2px}
+.status{font-size:11px;margin-top:4px}.open{color:var(--mae-green)}.closed{color:var(--mae-red);font-weight:900}
+.legend{padding:11px 13px;background:#fafbf9;border-top:1px solid var(--line);font-size:11px;color:var(--muted)}
+footer{max-width:1240px;margin:auto;padding:12px 18px 30px;font-size:11px;color:#69746e}
+.footer-box{border-top:1px solid var(--line);padding-top:12px}
+.popup-title{font-family:"Shippori Mincho",serif;font-size:16px;font-weight:700}
+.popup-address{margin:5px 0 8px}.gm{display:inline-block;background:#1769d1;color:#fff!important;padding:8px 11px;border-radius:4px;text-decoration:none;font-size:12px;font-weight:800}
+@media(max-width:850px){
+ .header-inner{align-items:flex-start}.city-mark{width:54px;height:54px;font-size:10px}
+ .layout{grid-template-columns:1fr}.side{order:2;min-height:520px}#map{height:540px}
+}
+</style>
+
+<style>
+.facility-icon{
+  width:34px;height:34px;border-radius:50%;display:grid;place-items:center;
+  background:#fff;border:2px solid #126b45;box-shadow:0 2px 7px rgba(0,0,0,.22);
+  font-size:17px;line-height:1;
+}
+.facility-icon .num{
+  position:absolute;transform:translate(12px,-12px);width:18px;height:18px;
+  background:#126b45;color:#fff;border-radius:50%;display:grid;place-items:center;
+  font-size:9px;border:1px solid #fff;font-weight:900;
+}
+.category-legend{
+  display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;font-size:11px;color:#59655e
+}
+.category-chip{
+  border:1px solid #d6ded8;background:#fff;padding:4px 7px;border-radius:999px
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div class="city-mark">前橋市<br>環境</div>
+    <div>
+      <div class="kicker">前橋市　市民向けごみ・資源ガイド</div>
+      <h1>リサイクル庫 ガイドマップ</h1>
+      <div class="subtitle">資源を「捨てる」から「活かす」へ。お近くのリサイクル庫をご案内します。</div>
+    </div>
+  </div>
+</header>
+
+<div class="notice">
+  <b>利用停止のお知らせ：</b>
+  上川淵市民サービスセンター（上川淵公民館）は、大規模改修工事のため
+  <b>2025年12月29日から2027年5月上旬まで</b>利用できません。
+</div>
+
+<main class="layout">
+  <section class="card map-wrap"><div class="map-label">前橋市 リサイクル庫位置図
+    <div class="category-legend">
+      <span class="category-chip">🏛️ 市役所</span>
+      <span class="category-chip">🏢 支所</span>
+      <span class="category-chip">🏠 公民館等</span>
+      <span class="category-chip">🚒 消防</span>
+      <span class="category-chip">🏃 スポーツ</span>
+      <span class="category-chip">🎓 学校</span>
+      <span class="category-chip">♻️ 清掃</span>
+    </div>
+  </div><div id="map"></div></section>
+  <section class="card side">
+    <div class="side-head">
+      <strong>📍 リサイクル庫一覧（26か所）</strong>
+      <div class="controls">
+        <input id="search" type="search" placeholder="施設名・住所で検索">
+        <button id="fit">全体表示</button>
+      </div>
+    </div>
+    <div id="list"></div>
+    <div class="legend">● 緑色の番号をクリックすると施設情報を表示します。<br>※位置は住所から自動取得しています。Googleマップで現地までの経路を確認できます。</div>
+  </section>
+</main>
+
+<footer><div class="footer-box">掲載内容は前橋市「リサイクル庫利用案内」をもとに作成しています。利用日・時間・臨時休止等は、利用前に前橋市公式情報または各施設へご確認ください。<br>地図データ：OpenStreetMap　｜　Googleマップへのリンクを各施設に設定しています。</div></footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+ integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+const facilities = [
+ {n:1,name:"六供清掃工場",addr:"六供町三丁目1-14",days:"月曜日～金曜日",hours:"8:30～16:30"},
+ {n:2,name:"大胡支所",addr:"堀越町1115",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:3,name:"宮城支所",addr:"鼻毛石町1507-4",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:4,name:"粕川支所",addr:"粕川町西田面216-1",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:5,name:"富士見支所",addr:"富士見町田島240",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:6,name:"城南支所（城南公民館）",addr:"二之宮町1320",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:7,name:"南橘市民サービスセンター（南橘公民館）",addr:"日輪寺町158",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:8,name:"桂萱市民サービスセンター（桂萱公民館）",addr:"上泉町141-3",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:9,name:"東市民サービスセンター（東公民館）",addr:"箱田町543-1",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:10,name:"上川淵市民サービスセンター（上川淵公民館）",addr:"後閑町35",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00",closed:true},
+ {n:11,name:"下川淵市民サービスセンター（下川淵公民館）",addr:"鶴光路町701",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:12,name:"芳賀市民サービスセンター（芳賀公民館）",addr:"鳥取町817",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:13,name:"元総社市民サービスセンター（元総社公民館）",addr:"元総社町三丁目1-1",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:14,name:"総社市民サービスセンター（総社公民館）",addr:"総社町総社1583-2",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:15,name:"永明市民サービスセンター（永明公民館）",addr:"上大島町930",days:"毎日",hours:"平日 9:00～17:00／土日祝 10:00～17:00"},
+ {n:16,name:"前橋市役所（旧第四保育所）",addr:"大手町二丁目12-1",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:17,name:"水道局",addr:"岩神町三丁目13-15",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:18,name:"K’BIXまえばし福祉会館",addr:"日吉町二丁目17-10",days:"月曜日～金曜日",hours:"9:00～17:00"},
+ {n:19,name:"前橋市保健センター",addr:"朝日町三丁目36-17",days:"月曜日～金曜日",hours:"9:00～17:15"},
+ {n:20,name:"南消防署",addr:"西善町766-2",days:"毎日",hours:"9:00～17:00"},
+ {n:21,name:"しんしん大渡温水プール・トレーニングセンター",addr:"大渡町二丁目3-11",days:"月～水・金～日",hours:"9:00～17:00"},
+ {n:22,name:"ヤマト市民体育館前橋",addr:"上佐鳥町460-1",days:"火曜日～日曜日",hours:"9:00～19:00"},
+ {n:23,name:"児童文化センター（前橋こども公園駐車場内）",addr:"西片貝町五丁目8",days:"火曜日・水～日・祝日の月曜日",hours:"9:00～16:00"},
+ {n:24,name:"東部共同調理場",addr:"荒子町1439-1",days:"月曜日～金曜日",hours:"9:00～16:30"},
+ {n:25,name:"西部共同調理場",addr:"総社町総社2368-1",days:"月曜日～金曜日",hours:"9:00～16:30"},
+ {n:26,name:"市立前橋高等学校",addr:"上細井町2211-3",days:"月曜日～金曜日",hours:"9:00～16:30"}
+];
+
+const map = L.map('map').setView([36.39,139.06], 12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,
+  attribution:'&copy; OpenStreetMap contributors'
+}).addTo(map);
+
+const markers = new Map();
+const bounds = L.latLngBounds([]);
+const list = document.getElementById('list');
+const search = document.getElementById('search');
+
+function category(f){
+  const n=Number(f.n);
+  if([2,3,4,5].includes(n)) return {icon:"🏢",label:"支所"};
+  if([7,8,9,10,11,12,13,14,15].includes(n)) return {icon:"🏠",label:"市民サービスセンター・公民館"};
+  if(n===16) return {icon:"🏛️",label:"市役所"};
+  if(n===17) return {icon:"💧",label:"水道局"};
+  if(n===18 || n===19) return {icon:"♿",label:"福祉・保健"};
+  if(n===20) return {icon:"🚒",label:"消防署"};
+  if(n===21 || n===22) return {icon:"🏃",label:"スポーツ施設"};
+  if(n===23) return {icon:"🧒",label:"児童文化施設"};
+  if(n===24 || n===25) return {icon:"🍳",label:"共同調理場"};
+  if(n===26) return {icon:"🎓",label:"学校"};
+  if(n===1) return {icon:"♻️",label:"清掃工場"};
+  if(n===6) return {icon:"🏠",label:"支所・公民館"};
+  return {icon:"♻️",label:"リサイクル庫"};
+}
+
+function googleUrl(f){
+  return 'https://www.google.com/maps/search/?api=1&query=' +
+    encodeURIComponent('群馬県前橋市' + f.addr);
+}
+function popup(f){
+  return `<div class="popup-title">${category(f).icon} ${f.n}. ${f.name}</div>
+    <div class="popup-address">群馬県前橋市${f.addr}</div>
+    <div>${f.days}<br>${f.hours}</div>
+    ${f.closed ? '<div style="color:#a44a00;font-weight:700;margin-top:6px">現在利用停止中（2027年5月上旬まで）</div>':''}
+    <div style="margin-top:9px"><a class="gm" target="_blank" rel="noopener" href="${googleUrl(f)}">Googleマップで開く ↗</a></div>`;
+}
+
+function renderList(){
+  const q=search.value.trim().toLowerCase();
+  list.innerHTML='';
+  facilities.filter(f=>(f.name+f.addr).toLowerCase().includes(q)).forEach(f=>{
+    const el=document.createElement('div');
+    el.className='item';
+    el.innerHTML=`<div class="num">${f.n}</div><div><b>${f.name}</b><div class="addr">前橋市${f.addr}</div>
+      <div class="status ${f.closed?'closed':'open'}">${f.closed?'● 利用停止中':'● '+f.days+'／'+f.hours}</div></div>`;
+    el.onclick=()=>{
+      const m=markers.get(f.n);
+      if(m){map.setView(m.getLatLng(),15);m.openPopup();}
+      else window.open(googleUrl(f),'_blank','noopener');
+    };
+    list.appendChild(el);
+  });
+}
+search.addEventListener('input',renderList);
+document.getElementById('fit').onclick=()=>{ if(bounds.isValid()) map.fitBounds(bounds.pad(.08)); };
+
+renderList();
+
+async function geocode(f){
+  const query=encodeURIComponent('群馬県前橋市'+f.addr);
+  const url=`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=jp&q=${query}`;
+  try{
+    const res=await fetch(url,{headers:{'Accept-Language':'ja'}});
+    const data=await res.json();
+    if(!data.length) return;
+    const lat=+data[0].lat, lon=+data[0].lon;
+    const cat = category(f);
+    const icon=L.divIcon({
+      className:'',
+      html:`<div class="facility-icon" title="${cat.label}"><span>${cat.icon}</span><span class="num">${f.n}</span></div>`,
+      iconSize:[34,34],iconAnchor:[17,17],popupAnchor:[0,-18]
+    });
+    const m=L.marker([lat,lon],{icon}).addTo(map).bindPopup(popup(f));
+    markers.set(f.n,m); bounds.extend([lat,lon]);
+  }catch(e){console.warn('geocode failed',f,e);}
+}
+
+(async()=>{
+  // Nominatimの負荷を抑えるため1件ずつ間隔を空けて取得
+  for(const f of facilities){
+    await geocode(f);
+    await new Promise(r=>setTimeout(r,900));
+  }
+  if(bounds.isValid()) map.fitBounds(bounds.pad(.08));
+})();
+</script>
+
+<div id="lineShareWrap" style="position:fixed;right:14px;bottom:14px;z-index:9999;">
+  <a id="lineShare" href="#" target="_blank" rel="noopener"
+     style="display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:999px;
+            background:#06C755;color:#fff;text-decoration:none;font-weight:700;
+            box-shadow:0 3px 10px rgba(0,0,0,.22);font-size:14px;">
+    LINEで共有
+  </a>
+</div>
+<script>
+(function(){
+  const a=document.getElementById('lineShare');
+  const url=location.href;
+  const text='前橋市リサイクル庫・クリック式ガイドマップ';
+  a.href='https://line.me/R/msg/text/?'+encodeURIComponent(text+'\n'+url);
+})();
+</script>
+
+</body>
+</html>
