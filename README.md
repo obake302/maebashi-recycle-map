@@ -1,0 +1,1 @@
+# maebashi-recycle-map
